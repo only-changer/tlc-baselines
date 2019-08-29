@@ -19,12 +19,12 @@ world = World(args.config_file, thread_num=args.thread)
 # create agents
 agents = []
 for i in world.intersections:
-	action_space = gym.spaces.Discrete(len(i["trafficLight"]["lightphases"]))
-	agents.append(RLAgent(
-		action_space, 
-		LaneVehicleGenerator(world, i["id"], ["lane_count"], in_only=True, average="road"),
-		LaneVehicleGenerator(world, i["id"], ["lane_waiting_count"], in_only=True, average="all", negative=True)
-	))
+    action_space = gym.spaces.Discrete(len(i["trafficLight"]["lightphases"]))
+    agents.append(RLAgent(
+        action_space, 
+        LaneVehicleGenerator(world, i["id"], ["lane_count"], in_only=True, average="road"),
+        LaneVehicleGenerator(world, i["id"], ["lane_waiting_count"], in_only=True, average="all", negative=True)
+    ))
 
 # create metric
 metric = TravelTimeMetric(world)
@@ -35,11 +35,11 @@ env = TSCEnv(world, agents, metric)
 # simulate
 obs = env.reset()
 for i in range(args.steps):
-	if i % 5 == 0:
-		actions = env.action_space.sample()
-	obs, rewards, dones, info = env.step(actions)
-	#print(obs)
-	#print(rewards)
-	print(info["metric"])
+    if i % 5 == 0:
+        actions = env.action_space.sample()
+    obs, rewards, dones, info = env.step(actions)
+    #print(obs)
+    #print(rewards)
+    print(info["metric"])
 
 print("Final Travel Time is %.4f" % env.metric.update(done=True))

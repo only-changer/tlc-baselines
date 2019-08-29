@@ -8,12 +8,12 @@ f.close()
 
 phases = {}
 for inter in intersections:
-	phases[inter['id']] = []
-	phase_info = inter["trafficLight"]["lightphases"]
-	phase_id = 0
-	for phase in phase_info:
-		phases[inter['id']].append([phase_id, phase['time']])
-		phase_id += 1
+    phases[inter['id']] = []
+    phase_info = inter["trafficLight"]["lightphases"]
+    phase_id = 0
+    for phase in phase_info:
+        phases[inter['id']].append([phase_id, phase['time']])
+        phase_id += 1
 
 text = json.dumps(phases)
 newf = open('examples/phases.json','w')

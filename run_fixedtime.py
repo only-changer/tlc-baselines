@@ -20,21 +20,21 @@ world = World(args.config_file, thread_num=args.thread)
 # parse intersections config
 config_valid = True
 try:
-	with open(args.phases_config_file) as f:
-		phases_config = json.load(f)
+    with open(args.phases_config_file) as f:
+        phases_config = json.load(f)
 except:
-	config_valid = False
-	raise Exception("phases config file load failed, will use default config")
+    config_valid = False
+    raise Exception("phases config file load failed, will use default config")
 
 # create agents
 agents = []
 if config_valid:
-	for i in world.intersections:
-		action_space = gym.spaces.Discrete(len(i["trafficLight"]["lightphases"]))
-		agents.append(Fixedtime_Agent(action_space, phases_config[i['id']]))
+    for i in world.intersections:
+        action_space = gym.spaces.Discrete(len(i["trafficLight"]["lightphases"]))
+        agents.append(Fixedtime_Agent(action_space, phases_config[i['id']]))
 else:
-	raise Exception("default config not implemented error")
-	
+    raise Exception("default config not implemented error")
+    
 
 # create metric
 metric = TravelTimeMetric(world)
@@ -45,12 +45,12 @@ env = TSCEnv(world, agents, metric)
 # simulate
 obs = env.reset()
 for i in range(args.steps):
-	if i % 5 == 0:
-		actions = []
-		for agent in agents:
-			actions.append(agent.get_action(world))
-		print('actions',actions)
-	obs, rewards, dones, info = env.step(actions)
-	print(info["metric"])
+    if i % 5 == 0:
+        actions = []
+        for agent in agents:
+            actions.append(agent.get_action(world))
+        print('actions',actions)
+    obs, rewards, dones, info = env.step(actions)
+    print(info["metric"])
 
 print("Final Travel Time is %.4f" % env.metric.update(done=True))
