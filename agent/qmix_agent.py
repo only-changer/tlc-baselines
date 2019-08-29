@@ -1,6 +1,6 @@
-from . import BaseAgent
+from . import RLAgent
 
-class RLAgent(BaseAgent):
+class QMIX_Agent(RLAgent):
 	def __init__(self, action_space, ob_generator, reward_generator):
 		super().__init__(action_space)
 		self.ob_generator = ob_generator
