@@ -1,7 +1,7 @@
 from . import BaseAgent
 import math
 
-class Time_Fixed_Agent(BaseAgent):
+class Fixedtime_Agent(BaseAgent):
 	def __init__(self, action_space, phases_duration):
 		super().__init__(action_space)
 		self.phases_duration = phases_duration

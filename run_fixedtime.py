@@ -2,7 +2,7 @@ import json
 import gym
 from environment import TSCEnv
 from world import World
-from agent import Time_Fixed_Agent
+from agent import Fixedtime_Agent
 from metric import TravelTimeMetric
 import argparse
 
@@ -31,7 +31,7 @@ agents = []
 if config_valid:
 	for i in world.intersections:
 		action_space = gym.spaces.Discrete(len(i["trafficLight"]["lightphases"]))
-		agents.append(Time_Fixed_Agent(action_space, phases_config[i['id']]))
+		agents.append(Fixedtime_Agent(action_space, phases_config[i['id']]))
 else:
 	raise Exception("default config not implemented error")
 	
