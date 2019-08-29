@@ -41,6 +41,16 @@ class World:
             } for i_id in self.intersection_ids
         }
 
+        # get phase_id of yellow phase of each intersection
+        self.intersection_yellow_phase_id = {}
+        for intersection in self.intersections:
+            i_id = intersection["id"]
+            lightphases = intersection["trafficLight"]["lightphases"]
+            for phase_id, phase in enumerate(lightphases):
+                if phase["availableRoadLinks"] == []:
+                    self.intersection_yellow_phase_id[i_id] = phase_id
+                    break
+
         # id of all roads and lanes
         self.all_roads = []
         self.all_lanes = []

@@ -15,6 +15,7 @@ class MaxPressureAgent(BaseAgent):
         self.world = self.ob_generator.world
         self.iid = self.ob_generator.iid
         self.delta_t = delta_t
+        self.yellow_phase_id = self.world.intersection_yellow_phase_id[self.iid]
 
         # the incoming lanes of this intersection
         self.lanes = []
@@ -43,11 +44,10 @@ class MaxPressureAgent(BaseAgent):
             self.current_phase_time += self.delta_t
             return self.last_phase
 
-        max_pressure = self._get_phase_pressure(self.phase_list[1], lanes_pressure)
-        max_pressure_id = self.phase_list[1]
+        max_pressure = -1e5
+        max_pressure_id = -1
         for phase_id in self.phase_list:
-            # 0 means yellow light
-            if phase_id == 0:
+            if phase_id == self.yellow_phase_id:
                 continue
             pressure = self._get_phase_pressure(phase_id, lanes_pressure)
             if pressure > max_pressure:

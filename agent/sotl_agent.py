@@ -16,6 +16,7 @@ class SOTLAgent(BaseAgent):
         self.world = self.ob_generator.world
         self.iid = self.ob_generator.iid
         self.delta_t = delta_t
+        self.yellow_phase_id = self.world.intersection_yellow_phase_id[self.iid]
 
         # the incoming lanes of this intersection
         self.lanes = []
@@ -26,7 +27,7 @@ class SOTLAgent(BaseAgent):
         self.phase_list = range(action_space.n)
 
         # the minimum duration of time of one phase
-        self.t_min = 30
+        self.t_min = 5
 
         # some threshold to deal with phase requests
         self.min_green_vehicle = 20
@@ -45,6 +46,12 @@ class SOTLAgent(BaseAgent):
     def get_ob(self):
         return self.ob_generator.generate()
 
+    def _next_phase(self, phase):
+        next_phase = phase % (len(self.phase_list) - 1) + 1
+        if next_phase == self.yellow_phase_id:
+            next_phase = next_phase % (len(self.phase_list) - 1) + 1
+        return next_phase
+
     def get_action(self, ob):
         lanes_waiting_count = ob
 
@@ -60,8 +67,8 @@ class SOTLAgent(BaseAgent):
             num_waiting_red_vehicle -= num_waiting_green_vehicle
 
             if num_waiting_green_vehicle <= self.min_green_vehicle and num_waiting_red_vehicle > self.max_red_vehicle:
-                self.last_phase = self.last_phase % (len(self.phase_list) - 1) + 1
-                self.current_phase_time = self.t_min
+                self.last_phase = self._next_phase(self.last_phase)
+                self.current_phase_time = 0
 
         self.current_phase_time += self.delta_t
         return self.last_phase

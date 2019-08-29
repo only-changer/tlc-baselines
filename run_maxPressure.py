@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('config_file', type=str, help='path of config file')
 parser.add_argument('--thread', type=int, default=1, help='number of threads')
 parser.add_argument('--steps', type=int, default=100, help='number of steps')
+parser.add_argument('--delta_t', type=int, default=20, help='how often agent make decisions')
 args = parser.parse_args()
 
 # create world
@@ -23,6 +24,7 @@ for i in world.intersections:
     agents.append(MaxPressureAgent(
         action_space,
         LaneVehicleGenerator(world, i["id"], ["pressure"], in_only=True, average=None),
+        delta_t=args.delta_t
     ))
 
 # create metric
@@ -35,9 +37,10 @@ env = TSCEnv(world, agents, metric)
 obs = env.reset()
 actions = []
 for i in range(args.steps):
-    actions = []
-    for i, agent in enumerate(agents):
-        actions.append(agent.get_action(obs[i]))
+    if i % args.delta_t == 0:
+        actions = []
+        for i, agent in enumerate(agents):
+            actions.append(agent.get_action(obs[i]))
     obs, rewards, dones, info = env.step(actions)
     #print(obs)
     #print(rewards)
