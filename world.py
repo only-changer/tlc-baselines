@@ -30,6 +30,28 @@ class World:
             } for i_id in self.intersection_ids
         }
 
+        # get roadLinks and phase information of each intersection
+        self.intersection_roadLinks = {
+            i_id: {
+                "roadLinks": [],
+                "startLanes": [],
+                "laneLinks":[],
+                "phase_available_roadLinks": [],
+                "phase_available_laneLinks": []
+            } for i_id in self.intersection_ids
+        }
+
+        # id of all roads and lanes
+        self.all_roads = []
+        self.all_lanes = []
+
+        for road in self.roadnet["roads"]:
+            self.all_roads.append(road["id"])
+            i = 0
+            for lane in road["lanes"]:
+                self.all_lanes.append(road["id"] + "_" + str(i))
+                i += 1
+
         def insert_road(iid, road, out):
 
             def get_direction(road, out=True):
@@ -62,6 +84,30 @@ class World:
             roads["outs"] = [outs[i] for i in order]
             roads["out_roads"] = [roads["roads"][i] for i, x in enumerate(roads["outs"]) if x]
             roads["in_roads"] = [roads["roads"][i] for i, x in enumerate(roads["outs"]) if not x]
+
+        for intersection in self.roadnet["intersections"]:
+            if intersection["virtual"]:
+                continue
+            iid = intersection["id"]
+            links = self.intersection_roadLinks[iid]
+            for roadLink in intersection["roadLinks"]:
+                links["roadLinks"].append([roadLink["startRoad"], roadLink["endRoad"]])
+                for laneLink in roadLink["laneLinks"]:
+                    startLane = roadLink["startRoad"] + "_" + str(laneLink["startLaneIndex"])
+                    links["startLanes"].append(startLane)
+                    endLane = roadLink["endRoad"] + "_" + str(laneLink["endLaneIndex"])
+                    links["laneLinks"].append([startLane, endLane])
+            for phase_id, phase in enumerate(intersection["trafficLight"]["lightphases"]):
+                links["phase_available_laneLinks"].append([])
+                links["phase_available_roadLinks"].append(phase["availableRoadLinks"])
+                for roadLink_id in phase["availableRoadLinks"]:
+                    roadLink = intersection["roadLinks"][roadLink_id]
+                    for laneLink in roadLink["laneLinks"]:
+                        startLane = roadLink["startRoad"] + "_" + str(laneLink["startLaneIndex"])
+                        endLane = roadLink["endRoad"] + "_" + str(laneLink["endLaneIndex"])
+                        links["phase_available_laneLinks"][phase_id].append([startLane, endLane])
+            links["startLanes"] = list(set(links["startLanes"]))
+
         print("road network parsed.")
         print("world built.")
 
@@ -70,6 +116,7 @@ class World:
             "lane_count": self.eng.get_lane_vehicle_count,
             "lane_waiting_count": self.eng.get_lane_waiting_vehicle_count,
             "lane_vehicles": self.eng.get_lane_vehicles,
+            "pressure": self.get_lane_pressure,
             "time": self.eng.get_current_time
         }
         self.fns = []
@@ -82,6 +129,19 @@ class World:
         with open(roadnet_file) as f:
             roadnet = json.load(f)
         return roadnet
+
+    def get_lane_pressure(self):
+        lane_pressures = {}
+        for lane in self.all_lanes:
+            lane_pressures[lane] = 0
+        lane_vehicle_count = self.eng.get_lane_vehicle_count()
+        for iid in self.intersection_ids:
+            links = self.intersection_roadLinks[iid]
+            for laneLink in links["laneLinks"]:
+                startlane = laneLink[0]
+                endlane = laneLink[1]
+                lane_pressures[startlane] += lane_vehicle_count[startlane] - lane_vehicle_count[endlane]
+        return lane_pressures
 
     def subscribe(self, fns):
         if isinstance(fns, str):
