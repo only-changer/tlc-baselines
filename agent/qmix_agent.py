@@ -39,15 +39,17 @@ class QMix_Agent(RLAgent):
     def save_model(self):
         self.model.save(self.weight_backup)
 
-    def remember(self, state, action, reward):
-        self.memory.append((state, action, reward))
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
 
     def replay(self, sample_batch_size):
         if len(self.memory) < sample_batch_size:
             return
         sample_batch = random.sample(self.memory, sample_batch_size)
-        for state, action, reward in sample_batch:
+        for state, action, reward, next_state, done in sample_batch:
             target = reward
+            if not done:
+                target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
             target_f = self.model.predict(state)
             target_f[0][action] = target
             self.model.fit(state, target_f, epochs=1, verbose=0)
@@ -65,14 +67,14 @@ class QMix_Agent(RLAgent):
     def get_reward(self):
         return self.reward_generator.generate()
 
-    def get_Q(self):
-        Qfunc = []
-        return Qfunc
+    def get_value(self, ob):
+        self.act_values = self.model.predict(ob)
+        return self.act_values
 
     def get_action(self, ob):
         if np.random.rand() <= self.exploration_rate:
             self.action = random.randrange(self.action_size)
         else:
-            act_values = self.model.predict(ob)
+            act_values = get_value()
             self.action = np.argmax(act_values[0])
         return self.action
