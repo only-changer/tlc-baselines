@@ -36,6 +36,17 @@ class LaneVehicleGenerator(BaseGenerator):
         self.world.subscribe(fns)
         self.fns = fns
 
+        self.ob_space = []
+        for i in range(len(fns)):
+            size = len(self.world.intersection_roadLinks[iid]["startLanes"])
+            if not in_only:
+                size *= 2
+            if average == "road":
+                size = len(roads)
+            if average == "all":
+                size = 1
+            self.ob_space.append((size,))
+
         self.average = average
         self.negative = negative
 

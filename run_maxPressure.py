@@ -39,8 +39,8 @@ actions = []
 for i in range(args.steps):
     if i % args.delta_t == 0:
         actions = []
-        for i, agent in enumerate(agents):
-            actions.append(agent.get_action(obs[i]))
+        for agent_id, agent in enumerate(agents):
+            actions.append(agent.get_action(obs[agent_id]))
     obs, rewards, dones, info = env.step(actions)
     #print(obs)
     #print(rewards)

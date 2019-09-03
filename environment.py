@@ -17,6 +17,7 @@ class TSCEnv(gym.Env):
         
         self.eng = self.world.eng
         self.n_agents = len(self.world.intersection_ids)
+        self.n = self.n_agents
 
         assert(len(agents) == self.n_agents)
 
