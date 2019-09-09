@@ -9,6 +9,7 @@ class Fixedtime_Agent(BaseAgent):
         for phase in self.phases_duration:
             cycle_time += phase[1]
         self.cycle_time = cycle_time
+        self.last_action = -1
 
     def get_ob(self):
         return 0
@@ -21,10 +22,12 @@ class Fixedtime_Agent(BaseAgent):
         operator_time = current_time
         while operator_time >= self.cycle_time:
             operator_time -= self.cycle_time
-        action = 0
-        while operator_time > self.phases_duration[action][1]:
-            operator_time -= self.phases_duration[action][1]
-            action = (action+1)%(len(self.phases_duration))
+        index = 0
+        while operator_time > self.phases_duration[index][1]:
+            operator_time -= self.phases_duration[index][1]
+            index = (index+1)%(len(self.phases_duration))
+        action = self.phases_duration[index][0]
+        self.last_action = action
         print('time',current_time, 'action', action)
 
         return action
