@@ -9,72 +9,80 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 
 class QMix_Agent(RLAgent):
-    def __init__(self, action_space, action_size, state_size, ob_generator, reward_generator):
+    def __init__(self, action_space, state_size, ob_generator, reward_generator):
         super().__init__(action_space, ob_generator, reward_generator)
 
-        self.weight_backup      = "examples/qnet_weight.h5"
-        self.action_size        = action_size
+        self.action_size        = self.action_space.n
         self.state_size         = state_size
+        self.id = ob_generator.iid
+
         self.memory             = deque(maxlen=2000)
         self.learning_rate      = 0.001
+        self.learning_start     = 10
         self.gamma              = 0.95
         self.exploration_rate   = 1.0
         self.exploration_min    = 0.01
         self.exploration_decay  = 0.995
         self.sample_batch_size  = 32
-        self.model              = self._build_model()
+
+        self.model = self._build_model()
+        self.target_model = self._build_model()
+        self.update_target_network()
 
     def _build_model(self):
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(24, activation='relu'))
+        model.add(Dense(40, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(40, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
-
-        if os.path.isfile(self.weight_backup):
-            model.load_weights(self.weight_backup)
-            self.exploration_rate = self.exploration_min
         return model
 
-    def save_model(self):
-        self.model.save(self.weight_backup)
+    def load_model(self, dir="examples/qmix_weights"):
+        name = "agent_{}.h5".format(self.id)
+        model_name = os.path.join(dir, name)
+        self.model.load_weights(model_name)
 
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+    def save_model(self, dir="examples/qmix_weights"):
+        name = "agent_{}.h5".format(self.id)
+        model_name = os.path.join(dir, name)
+        self.model.save_weights(model_name)
 
-    def replay(self, sample_batch_size):
-        if len(self.memory) < sample_batch_size:
+    def update_target_network(self):
+        weights = self.model.get_weights()
+        self.target_model.set_weights(weights)
+
+    def remember(self, state, action, reward, next_state):
+        self.memory.append((state, action, reward, next_state))
+
+    def replay(self):
+        if len(self.memory) < self.sample_batch_size:
             return
-        sample_batch = random.sample(self.memory, sample_batch_size)
-        for state, action, reward, next_state, done in sample_batch:
-            target = reward
-            if not done:
-                target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
+        sample_batch = random.sample(self.memory, self.sample_batch_size)
+        for state, action, reward, next_state in sample_batch:
+            state = np.reshape(state, [1,-1])
+            next_state = np.reshape(next_state, [1,-1])
+            target = reward + self.gamma*np.amax(self.target_model.predict(next_state)[0])
             target_f = self.model.predict(state)
             target_f[0][action] = target
-            self.model.fit(state, target_f, epochs=1, verbose=0)
+            history = self.model.fit(state, target_f, epochs=1, verbose=0)
+            #print('loss',history.history['loss'])
         if self.exploration_rate > self.exploration_min:
             self.exploration_rate *= self.exploration_decay
 
     def get_ob(self):
-        raw_ob = self.ob_generator.generate()
-        self.ob = raw_ob
-        for i in range(self.state_size - len(raw_ob)):
-            self.ob.append(0)
-        self.ob = np.reshape(self.ob, [1, self.state_size])
-        return self.ob
+        return self.ob_generator.generate()
 
     def get_reward(self):
         return self.reward_generator.generate()
 
     def get_value(self, ob):
-        self.act_values = self.model.predict(ob)
-        return self.act_values
+        ob = np.reshape(ob, [1,-1])
+        return self.model.predict(ob)
 
     def get_action(self, ob):
         if np.random.rand() <= self.exploration_rate:
             self.action = random.randrange(self.action_size)
         else:
-            act_values = get_value()
+            act_values = self.get_value(ob)
             self.action = np.argmax(act_values[0])
         return self.action

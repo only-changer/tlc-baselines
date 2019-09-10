@@ -1,4 +1,5 @@
 import gym
+import os
 from environment import TSCEnv
 from world import World
 from generator import LaneVehicleGenerator
@@ -34,10 +35,16 @@ class QMIXNet():
         self.hyper_net2.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
 
     def get_qtot(self, q_n, global_state):
-        w1 = np.abs(self.hyper_net1.predict(global_state))
-        w2 = np.abs(self.hyper_net2.predict(global_state))
+        state = []
+        for i in range(self.num_agents):
+            for j in range(self.state_size):
+                state.append(global_state[i][j])
+        state = np.reshape(np.array(state),[1,-1])
 
-        self.state = global_state
+        w1 = np.abs(self.hyper_net1.predict(state))
+        w2 = np.abs(self.hyper_net2.predict(state))
+
+        self.state = state
         self.w1 = w1
         self.w2 = w2
 
@@ -53,7 +60,7 @@ class QMIXNet():
 parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('config_file', type=str, help='path of config file')
 parser.add_argument('--thread', type=int, default=2, help='number of threads')
-parser.add_argument('--steps', type=int, default=20, help='number of steps')
+parser.add_argument('--steps', type=int, default=50, help='number of steps')
 args = parser.parse_args()
 
 # create world
@@ -73,7 +80,6 @@ for i in world.intersections:
     action_size = len(i["trafficLight"]["lightphases"])
     agents.append(QMix_Agent(
         action_space,
-        action_size,
         max_state_size,
         LaneVehicleGenerator(world, i["id"], ["lane_count"], in_only=True, average="road"),
         LaneVehicleGenerator(world, i["id"], ["lane_waiting_count"], in_only=True, average="all", negative=True)
@@ -85,45 +91,69 @@ metric = TravelTimeMetric(world)
 # create env
 env = TSCEnv(world, agents, metric)
 
-# simulate
-obs = env.reset()
+# create qmixnet
 qmixnet = QMIXNet(len(agents), max_state_size, max_state_size)
-for i in range(args.steps):
-    if i % 5 == 0:
-        # Get ob, q and actions from agents
-        obs = [[]]
-        qns = []
-        actions = []
-        for agent in agents:
-            ob = agent.get_ob()
-            obs = np.concatenate([obs,ob],axis=1)
-            qns.append(np.max(agent.get_value(ob)))
-            actions.append(agent.get_action(ob))
-        qns = np.reshape(qns, [1, len(agents)])
-        q_tot = qmixnet.get_qtot(qns, obs)
-        print('action ',actions)
-        #print('qtot: ',q_tot)
 
-    # step
-    obs, rewards, dones, info = env.step(actions)
+# utils for ob reform
+def reform(obs, state_size):
+    for index, ob in enumerate(obs):
+        formed_ob = ob.tolist()
+        for i in range(state_size - len(ob)):
+            formed_ob.append(0)
+        formed_ob = np.array(formed_ob)
+        obs[index] = formed_ob
 
-    # Update network weights
-    index = 0
+# train
+def train():
+    last_obs = env.reset()
+    reform(last_obs, max_state_size)
+    for i in range(args.steps):
+        if i % 5 == 0:
+            actions = []
+            qs = []
+            for agent_id, agent in enumerate(agents):
+                actions.append(agent.get_action(last_obs[agent_id]))
+                qs.append(np.max(agent.get_value(last_obs[agent_id])))
+            qs = np.reshape(qs, [1, -1])
+            qtot = qmixnet.get_qtot(qs, last_obs)
+            print('action ',actions)
+        # step
+        obs, rewards, dones, info = env.step(actions)
+        reform(obs, max_state_size)
+        for agent_id, agent in enumerate(agents):
+            agent.remember(last_obs[agent_id], actions[agent_id], rewards[agent_id], obs[agent_id])
+        last_obs = obs
+        if all(dones):
+            break
+        # Update agents net
+        for agent_id, agent in enumerate(agents):
+            if i > agent.learning_start:
+                agent.replay()
+                agent.update_target_network()
+        # Update qmixnet
+        qmixnet.hyper_net1.fit(qmixnet.state, qmixnet.w1, epochs=1, verbose=0)
+        qmixnet.hyper_net2.fit(qmixnet.state, qmixnet.w2, epochs=1, verbose=0)
+    print("Final Travel Time is %.4f" % env.metric.update(done=True))
+    # Save weights
+    if not os.path.exists("examples/qmix_weights"):
+        os.mkdir("examples/qmix_weights")
     for agent in agents:
-        next_ob = obs[index]
-        next_ob = np.reshape(next_ob, [1, agent.state_size])
-        reward = rewards[index]
-        reward += q_tot[0]
-        done = dones[index]
-        agent.remember(agent.ob, agent.action, reward, next_ob, done)
-        agent.replay(agent.sample_batch_size)
-        index += 1
+        agent.save_model("examples/qmix_weights")
 
-    qmixnet.hyper_net1.fit(qmixnet.state, qmixnet.w1, epochs=1, verbose=0)
-    qmixnet.hyper_net2.fit(qmixnet.state, qmixnet.w2, epochs=1, verbose=0)
-    
-    #print(obs)
-    #print(rewards)
-    #print(info["metric"])
+def test():
+    obs = env.reset()
+    reform(obs, max_state_size)
+    for agent in agents:
+        agent.load_model("examples/qmix_weights")
+    for i in range(args.steps):
+        if i % 5 == 0:
+            actions = []
+            for agent_id, agent in enumerate(agents):
+                actions.append(agent.get_action(obs[agent_id]))
+            obs, rewards, dones, info = env.step(actions)
+            reform(obs, max_state_size)
+        if all(dones):
+            break
+    print("Final Travel Time is %.4f" % env.metric.update(done=True))
 
-print("Final Travel Time is %.4f" % env.metric.update(done=True))
+train()

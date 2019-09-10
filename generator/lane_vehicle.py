@@ -19,6 +19,7 @@ class LaneVehicleGenerator(BaseGenerator):
     """
     def __init__(self, world, iid, fns, in_only=False, average=None, negative=False):
         self.world = world
+        self.iid = iid
 
         # get lanes of intersections
         self.lanes = []
