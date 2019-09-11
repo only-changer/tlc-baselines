@@ -7,11 +7,9 @@ from agent import QMix_Agent
 from metric import TravelTimeMetric
 import argparse
 import numpy as np
-from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
-from keras.activations import elu
 
 # Q-mix network, computing mixed Q
 class QMIXNet():
@@ -21,18 +19,23 @@ class QMIXNet():
         self.num_agents = num_agents
         self.state_size = state_size
         self.hidden_size = hidden_size
-        self.learning_rate = 0.001
-        self.sample_batch_size  = 32
-        self.memory = deque(maxlen=2000)
-        self.state = [[]]
+        self.learning_rate = 0.005
 
-        self.hyper_net1 = Sequential()
-        self.hyper_net1.add(Dense(self.num_agents*self.hidden_size, input_dim=self.num_agents*self.state_size, activation='linear'))
-        self.hyper_net1.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+        self.hyper_net_w1 = Sequential()
+        self.hyper_net_w1.add(Dense(self.num_agents*self.hidden_size, input_dim=self.num_agents*self.state_size, activation='linear'))
+        self.hyper_net_w1.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
 
-        self.hyper_net2 = Sequential()
-        self.hyper_net2.add(Dense(self.hidden_size, input_dim=self.num_agents*self.state_size, activation='linear'))
-        self.hyper_net2.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+        self.hyper_net_b1 = Sequential()
+        self.hyper_net_b1.add(Dense(self.hidden_size, input_dim=self.num_agents*self.state_size, activation='linear'))
+        self.hyper_net_b1.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+
+        self.hyper_net_w2 = Sequential()
+        self.hyper_net_w2.add(Dense(self.hidden_size, input_dim=self.num_agents*self.state_size, activation='linear'))
+        self.hyper_net_w2.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+
+        self.hyper_net_b2 = Sequential()
+        self.hyper_net_b2.add(Dense(1, input_dim=self.num_agents*self.state_size, activation='relu'))
+        self.hyper_net_b2.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
 
     def get_qtot(self, q_n, global_state):
         state = []
@@ -41,26 +44,33 @@ class QMIXNet():
                 state.append(global_state[i][j])
         state = np.reshape(np.array(state),[1,-1])
 
-        w1 = np.abs(self.hyper_net1.predict(state))
-        w2 = np.abs(self.hyper_net2.predict(state))
+        w1 = np.abs(self.hyper_net_w1.predict(state))
+        w1 = w1.reshape(self.num_agents, self.hidden_size)
+        b1 = self.hyper_net_b1.predict(state)
+        w2 = np.abs(self.hyper_net_w2.predict(state))
+        w2 = w2.reshape(self.hidden_size, 1)
+        b2 = self.hyper_net_b2.predict(state)
 
         self.state = state
         self.w1 = w1
+        self.b1 = b1
         self.w2 = w2
+        self.b2 = b2
 
-        w1 = w1.reshape(self.num_agents, self.hidden_size)
-        w2 = w2.reshape(self.hidden_size, 1)
-
-        q_tot = np.dot(q_n,w1)
-        q_tot = np.dot(q_tot,w2)
+        q_tot = np.dot(q_n,w1)+b1
+        q_tot = np.maximum(0,q_tot)
+        q_tot = np.dot(q_tot,w2)+b2
 
         return q_tot
+
+    def update(self):
+        raise Exception("Not implemented yet.")
 
 # parse args
 parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('config_file', type=str, help='path of config file')
-parser.add_argument('--thread', type=int, default=2, help='number of threads')
-parser.add_argument('--steps', type=int, default=50, help='number of steps')
+parser.add_argument('--thread', type=int, default=5, help='number of threads')
+parser.add_argument('--steps', type=int, default=20, help='number of steps')
 args = parser.parse_args()
 
 # create world
@@ -131,8 +141,7 @@ def train():
                 agent.replay()
                 agent.update_target_network()
         # Update qmixnet
-        qmixnet.hyper_net1.fit(qmixnet.state, qmixnet.w1, epochs=1, verbose=0)
-        qmixnet.hyper_net2.fit(qmixnet.state, qmixnet.w2, epochs=1, verbose=0)
+        #qmixnet.update()
     print("Final Travel Time is %.4f" % env.metric.update(done=True))
     # Save weights
     if not os.path.exists("examples/qmix_weights"):

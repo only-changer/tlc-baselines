@@ -15,8 +15,20 @@ from keras.layers.pooling import MaxPooling2D
 from keras import backend as K
 from keras.engine.topology import Layer
 
-from baseline.agent import Agent
-from . import RLAgent
+import json
+import shutil
+
+class Agent(object):
+
+    def __init__(self, dic_agent_conf, dic_traffic_env_conf, dic_path):
+
+        self.dic_agent_conf = dic_agent_conf
+        self.dic_traffic_env_conf = dic_traffic_env_conf
+        self.dic_path = dic_path
+
+    def choose_action(self):
+
+        raise NotImplementedError
 
 class Selector(Layer):
 
