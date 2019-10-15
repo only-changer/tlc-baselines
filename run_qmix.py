@@ -127,6 +127,7 @@ def train():
             qs = np.reshape(qs, [1, -1])
             qtot = qmixnet.get_qtot(qs, last_obs)
             print('action ',actions)
+
         # step
         obs, rewards, dones, info = env.step(actions)
         reform(obs, max_state_size)
@@ -135,13 +136,18 @@ def train():
         last_obs = obs
         if all(dones):
             break
+
         # Update agents net
         for agent_id, agent in enumerate(agents):
             if i > agent.learning_start:
                 agent.replay()
                 agent.update_target_network()
         # Update qmixnet
-        #qmixnet.update()
+        qmixnet.update()
+
+        # Note: Qmix net should be an end-to-end networks, current structure does not train qmix weights.
+        # Need re-write in tf, not keras model.
+
     print("Final Travel Time is %.4f" % env.metric.update(done=True))
     # Save weights
     if not os.path.exists("examples/qmix_weights"):
@@ -165,4 +171,6 @@ def test():
             break
     print("Final Travel Time is %.4f" % env.metric.update(done=True))
 
-train()
+if __name__ == '__main__':
+    train()
+    #test()
