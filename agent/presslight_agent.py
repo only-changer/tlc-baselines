@@ -236,12 +236,12 @@ class PressLightAgent(RLAgent):
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load_model(self, dir="model/presslight"):
-        name = "presslight_agent_{}.h5".format(self.iid)
+    def load_model(self, dir="model/presslight", e=39):
+        name = "presslight_agent_{}_{}.h5".format(self.iid, e)
         model_name = os.path.join(dir, name)
         self.model.load_weights(model_name)
 
-    def save_model(self, dir="model/presslight"):
-        name = "presslight_agent_{}.h5".format(self.iid)
+    def save_model(self, dir="model/presslight", e=0):
+        name = "presslight_agent_{}_{}.h5".format(self.iid, e)
         model_name = os.path.join(dir, name)
         self.model.save_weights(model_name)
