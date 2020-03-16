@@ -12,7 +12,7 @@ import os
 
 
 class PressLightAgent(RLAgent):
-    def __init__(self, action_space, ob_generator, reward_generator, iid, world):
+    def __init__(self, action_space, ob_generator, reward_generator, iid, world, is_virtual = False):
         super().__init__(action_space, ob_generator, reward_generator)
 
         self.iid = iid
@@ -147,9 +147,10 @@ class PressLightAgent(RLAgent):
             ],
 
         }
-        self.model = self._build_model()
-        self.target_model = self._build_model()
-        self.update_target_network()
+        if not is_virtual:
+            self.model = self._build_model()
+            self.target_model = self._build_model()
+            self.update_target_network()
 
     def get_action(self, phase, ob):
         if np.random.rand() <= self.epsilon:

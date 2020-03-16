@@ -39,7 +39,7 @@ logger.addHandler(fh)
 logger.addHandler(sh)
 
 
-def build(path):
+def build(path, is_virtual = False):
     # create world
     world = World(path, thread_num=args.thread)
 
@@ -52,7 +52,8 @@ def build(path):
             LaneVehicleGenerator(world, i, ["lane_count"], in_only=True, average=None),
             LaneVehicleGenerator(world, i, ["lane_waiting_count"], in_only=True, average="all", negative=True),
             i.id,
-            world
+            world,
+            is_virtual
         ))
         if args.load_model:
             agents[-1].load_model(args.save_dir)
@@ -70,8 +71,11 @@ def build(path):
 def meta_train(path):
     meta_world, meta_agents, meta_env = [], [], []
     total_decision_num = []
+    is_virtual = False
     for n in range(len(path) * 2):
-        w, a, e = build(path[n % len(path)])
+        if n == len(path):
+            is_virtual = True
+        w, a, e = build(path[n % len(path)], is_virtual)
         meta_world.append(w)
         meta_agents.append(a)
         meta_env.append(e)
