@@ -91,14 +91,17 @@ def meta_train(path):
             meta_episodes_rewards.append([0 for i in meta_agents[n]])
             meta_episodes_decision_num.append(0)
         i = 0
+        for n in range(len(path)):
+            for agent in meta_agents[n]:
+                agent.load_model(args.save_dir, e)
         while i < args.steps:
             # print(i)
             j = i
             if i % args.action_interval == 0:
                 # step 1
                 for n in range(len(path)):
-                    for agent in meta_agents[n]:
-                        agent.load_model(args.save_dir, e)
+                    # for agent in meta_agents[n]:
+                    #     agent.load_model(args.save_dir, e)
                     actions = []
                     last_phase = []
                     for agent_id, agent in enumerate(meta_agents[n]):
@@ -138,7 +141,7 @@ def meta_train(path):
                 for n in range(len(path)):
                     actions = []
                     last_phase = []
-                    for agent_id, agent in enumerate(meta_agents[n + len(path)]):
+                    for agent_id, agent in enumerate(meta_agents[n]):
                         last_phase.append([meta_env[n + len(path)].world.intersections[agent_id].current_phase])
                         if total_decision_num[n] > agent.learning_start:
                             # if True:
@@ -178,15 +181,20 @@ def meta_train(path):
                         agent.update_target_network()
             if all(dones):
                 break
+        # logger.info("Step 1:")
         for n in range(len(path)):
             logger.info("env:{}, episode:{}/{}, average travel time:{}".format(n, e, args.episodes, meta_env[
-                n + len(path)].eng.get_average_travel_time()))
-        for agent_id, agent in enumerate(key_agent):
-            for n in range(len(path)):
-                logger.info(
-                    "env:{}, agent:{}, mean_episode_reward:{}".format(n, agent_id,
-                                                                      meta_episodes_rewards[n + len(path)][agent_id] /
-                                                                      meta_episodes_decision_num[n + len(path)]))
+                n].eng.get_average_travel_time()))
+        # logger.info("Step 2:")
+        # for n in range(len(path)):
+        #     logger.info("env:{}, episode:{}/{}, average travel time:{}".format(n, e, args.episodes, meta_env[
+        #         n + len(path)].eng.get_average_travel_time()))
+        # for agent_id, agent in enumerate(key_agent):
+        #     for n in range(len(path)):
+        #         logger.info(
+        #             "env:{}, agent:{}, mean_episode_reward:{}".format(n, agent_id,
+        #                                                               meta_episodes_rewards[n + len(path)][agent_id] /
+        #                                                               meta_episodes_decision_num[n + len(path)]))
 
 
 def test(path):
