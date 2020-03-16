@@ -12,7 +12,7 @@ import os
 
 
 class PressLightAgent(RLAgent):
-    def __init__(self, action_space, ob_generator, reward_generator, iid):
+    def __init__(self, action_space, ob_generator, reward_generator, iid, world):
         super().__init__(action_space, ob_generator, reward_generator)
 
         self.iid = iid
@@ -21,9 +21,13 @@ class PressLightAgent(RLAgent):
 
         self.memory = deque(maxlen=2000)
         self.learning_start = 2000
+        self.meta_test_start = 100
+        self.meta_test_update_model_freq = 10
+        self.meta_test_update_target_model_freq = 200
         self.update_model_freq = 1
         self.update_target_model_freq = 20
-
+        self.world = world
+        self.world.subscribe("pressure")
         self.gamma = 0.95  # discount rate
         self.epsilon = 0.1  # exploration rate
         self.epsilon_min = 0.01
@@ -206,6 +210,10 @@ class PressLightAgent(RLAgent):
     def _reshape_ob(self, ob):
         return np.reshape(ob, (1, -1))
 
+    def get_reward(self):
+        pressures = self.world.get_info("pressure")
+        return -pressures[self.iid]
+
     def update_target_network(self):
         weights = self.model.get_weights()
         self.target_model.set_weights(weights)
@@ -214,7 +222,10 @@ class PressLightAgent(RLAgent):
         self.memory.append((ob, phase, action, reward, next_ob, next_phase))
 
     def replay(self):
-        minibatch = random.sample(self.memory, self.batch_size)
+        if self.batch_size > len(self.memory):
+            minibatch = self.memory
+        else:
+            minibatch = random.sample(self.memory, self.batch_size)
         obs, phases, actions, rewards, next_obs, next_phases = [np.stack(x) for x in np.array(minibatch).T]
         target = rewards + self.gamma * np.amax(self.target_model.predict([next_phases, next_obs]), axis=1)
         target_f = self.model.predict([phases, obs])

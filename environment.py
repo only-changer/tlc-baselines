@@ -2,6 +2,7 @@ import gym
 import numpy as np
 import cityflow
 
+
 class TSCEnv(gym.Env):
     """
     Environment for Traffic Signal Control task.
@@ -12,9 +13,10 @@ class TSCEnv(gym.Env):
     agents: list of agent, corresponding to each intersection in world.intersections
     metric: Metric object, used to calculate evaluation metric
     """
+
     def __init__(self, world, agents, metric):
         self.world = world
-        
+
         self.eng = self.world.eng
         self.n_agents = len(self.world.intersection_ids)
         self.n = self.n_agents
@@ -27,6 +29,12 @@ class TSCEnv(gym.Env):
 
         self.metric = metric
 
+    def change_world(self, world):
+        self.world.reset()
+        # self.world = world
+        self.eng = world.eng
+        self.world.reset()
+
     def step(self, actions):
         assert len(actions) == self.n_agents
 
@@ -35,7 +43,7 @@ class TSCEnv(gym.Env):
         obs = [agent.get_ob() for agent in self.agents]
         rewards = [agent.get_reward() for agent in self.agents]
         dones = [False] * self.n_agents
-        #infos = {"metric": self.metric.update()}
+        # infos = {"metric": self.metric.update()}
         infos = {}
 
         return obs, rewards, dones, infos

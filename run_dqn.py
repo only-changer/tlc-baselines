@@ -13,9 +13,9 @@ from datetime import datetime
 # parse args
 parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('config_file', type=str, help='path of config file')
-parser.add_argument('--thread', type=int, default=1, help='number of threads')
+parser.add_argument('--thread', type=int, default=4, help='number of threads')
 parser.add_argument('--steps', type=int, default=3600, help='number of steps')
-parser.add_argument('--action_interval', type=int, default=20, help='how often agent make decisions')
+parser.add_argument('--action_interval', type=int, default=10, help='how often agent make decisions')
 parser.add_argument('--episodes', type=int, default=200, help='training episodes')
 parser.add_argument('--save_model', action="store_true", default=False)
 parser.add_argument('--load_model', action="store_true", default=False)

@@ -47,8 +47,9 @@ for i in world.intersections:
     agents.append(PressLightAgent(
         action_space,
         LaneVehicleGenerator(world, i, ["lane_count"], in_only=True, average=None),
-        IntersectionVehicleGenerator(world, i, ["pressure"], average="own", negative=True),
-        i.id
+        LaneVehicleGenerator(world, i, ["lane_waiting_count"], in_only=True, average="all", negative=True),
+        i.id,
+        world
     ))
     if args.load_model:
         agents[-1].load_model(args.save_dir)
@@ -96,7 +97,8 @@ def train(args, env):
                 rewards = np.mean(rewards_list, axis=0)
 
                 for agent_id, agent in enumerate(agents):
-                    agent.remember(last_obs[agent_id], last_phase[agent_id], actions[agent_id], rewards[agent_id], obs[agent_id],
+                    agent.remember(last_obs[agent_id], last_phase[agent_id], actions[agent_id], rewards[agent_id],
+                                   obs[agent_id],
                                    [env.world.intersections[agent_id].current_phase])
                     episodes_rewards[agent_id] += rewards[agent_id]
                     episodes_decision_num += 1
@@ -131,7 +133,65 @@ def test():
             actions = []
             for agent_id, agent in enumerate(agents):
                 actions.append(agent.get_action([env.world.intersections[agent_id].current_phase], obs[agent_id]))
-        obs, rewards, dones, info = env.step(actions)
+            rewards_list = []
+            for _ in range(args.action_interval):
+                obs, rewards, dones, _ = env.step(actions)
+                i += 1
+                rewards_list.append(rewards)
+            rewards = np.mean(rewards_list, axis=0)
+        # print(env.eng.get_average_travel_time())
+        if all(dones):
+            break
+    logger.info("Final Travel Time is %.4f" % env.eng.get_average_travel_time())
+
+
+def meta_test(config):
+    obs = env.reset()
+    last_obs = obs
+    # env.change_world(World(config, thread_num=args.thread))
+    for agent in agents:
+        agent.load_model(args.save_dir)
+    total_decision_num = 0
+    for i in range(args.steps):
+        if i % args.action_interval == 0:
+            actions = []
+            last_phase = []
+            for agent_id, agent in enumerate(agents):
+                last_phase.append([env.world.intersections[agent_id].current_phase])
+                actions.append(agent.get_action([env.world.intersections[agent_id].current_phase], obs[agent_id]))
+            rewards_list = []
+            for _ in range(args.action_interval):
+                obs, rewards, dones, _ = env.step(actions)
+                i += 1
+                rewards_list.append(rewards)
+            rewards = np.mean(rewards_list, axis=0)
+            for agent_id, agent in enumerate(agents):
+                agent.remember(last_obs[agent_id], last_phase[agent_id], actions[agent_id], rewards[agent_id],
+                               obs[agent_id],
+                               [env.world.intersections[agent_id].current_phase])
+                total_decision_num += 1
+            last_obs = obs
+        for agent_id, agent in enumerate(agents):
+            if total_decision_num > 10 and total_decision_num % agent.update_model_freq == agent.update_model_freq - 1:
+                agent.replay()
+            if total_decision_num > 10 and total_decision_num % agent.update_target_model_freq == agent.update_target_model_freq - 1:
+                agent.update_target_network()
+        # print(env.eng.get_average_travel_time())
+        if all(dones):
+            break
+    print(total_decision_num)
+    logger.info("Final Travel Time is %.4f" % env.eng.get_average_travel_time())
+    for i in range(args.steps):
+        if i % args.action_interval == 0:
+            actions = []
+            for agent_id, agent in enumerate(agents):
+                actions.append(agent.get_action([env.world.intersections[agent_id].current_phase], obs[agent_id]))
+            rewards_list = []
+            for _ in range(args.action_interval):
+                obs, rewards, dones, _ = env.step(actions)
+                i += 1
+                rewards_list.append(rewards)
+            rewards = np.mean(rewards_list, axis=0)
         # print(env.eng.get_average_travel_time())
         if all(dones):
             break
@@ -142,5 +202,6 @@ if __name__ == '__main__':
     # simulate
     # import os
     # os.environ["CUDA_VISIBLE_DEVICES"] = '0, 1'
-    train(args, env)
+    # train(args, env)
     test()
+    meta_test('/mnt/d/Cityflow/examples/config.json')

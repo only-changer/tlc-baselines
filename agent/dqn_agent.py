@@ -19,7 +19,9 @@ class DQNAgent(RLAgent):
         self.learning_start = 2000
         self.update_model_freq = 1
         self.update_target_model_freq = 20
-
+        self.meta_test_start = 100
+        self.meta_test_update_model_freq = 10
+        self.meta_test_update_target_model_freq = 200
         self.gamma = 0.95  # discount rate
         self.epsilon = 0.1  # exploration rate
         self.epsilon_min = 0.01
@@ -75,12 +77,12 @@ class DQNAgent(RLAgent):
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load_model(self, dir="model/dqn"):
-        name = "dqn_agent_{}.h5".format(self.iid)
+    def load_model(self, dir="model/dqn", e = 39):
+        name = "dqn_agent_{}_{}.h5".format(self.iid, e)
         model_name = os.path.join(dir, name)
         self.model.load_weights(model_name)
 
-    def save_model(self, dir="model/dqn"):
-        name = "dqn_agent_{}.h5".format(self.iid)
+    def save_model(self, dir="model/dqn", e = 0):
+        name = "dqn_agent_{}_{}.h5".format(self.iid, e)
         model_name = os.path.join(dir, name)
         self.model.save_weights(model_name)
