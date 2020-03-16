@@ -159,8 +159,8 @@ def meta_train(path):
                     rewards = np.mean(rewards_list, axis=0)
 
                     for agent_id, agent in enumerate(key_agent):
-                        if total_decision_num[n] < agent.learning_start:
-                            continue
+                        # if total_decision_num[n] < agent.learning_start:
+                        #     continue
                         agent.remember(meta_last_obs[n + len(path)][agent_id], last_phase[agent_id], actions[agent_id],
                                        rewards[agent_id],
                                        obs[agent_id],
@@ -182,9 +182,9 @@ def meta_train(path):
             if all(dones):
                 break
         # logger.info("Step 1:")
+        logger.info("episode:{}/{}".format(e, args.episodes))
         for n in range(len(path)):
-            logger.info("env:{}, episode:{}/{}, average travel time:{}".format(n, e, args.episodes, meta_env[
-                n].eng.get_average_travel_time()))
+            logger.info("env:{},  average travel time:{}".format(n, meta_env[n].eng.get_average_travel_time()))
         # logger.info("Step 2:")
         # for n in range(len(path)):
         #     logger.info("env:{}, episode:{}/{}, average travel time:{}".format(n, e, args.episodes, meta_env[
