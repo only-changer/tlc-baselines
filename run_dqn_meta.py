@@ -267,17 +267,17 @@ if __name__ == '__main__':
         for file in files:
             real_flow_path.append(real_flow_floder + file)
     # meta_train(real_flow_path)
-    logger.info("Meta Test Real")
-    result = []
-    for n in range(len(real_flow_path)):
-        logger.info("Meta Test Env: %d" % n)
-        t1 = test(real_flow_path[n])
-        t2 = meta_test(real_flow_path[n])
-        result.append(np.minimum(t1, t2))
-    logger.info(
-        "Meta Test Result, Max: {}, Min: {}, Mean: {}".format(np.max(result), np.min(result), np.mean(result)))
+    # logger.info("Meta Test Real")
+    # result = []
+    # for n in range(len(real_flow_path)):
+    #     logger.info("Meta Test Env: %d" % n)
+    #     t1 = test(real_flow_path[n])
+    #     t2 = meta_test(real_flow_path[n])
+    #     result.append(np.minimum(t1, t2))
+    # logger.info(
+    #     "Meta Test Result, Max: {}, Min: {}, Mean: {}".format(np.max(result), np.min(result), np.mean(result)))
     fake_flow_floder = '/mnt/c/users/onlyc/desktop/work/RRL_TLC/fake_flow_config/'
-    w_dis = [0.005, 0.01, 0.05, 0.1]
+    w_dis = [0.1]
     for w in w_dis:
         logger.info("Meta Test Fake with W Distance: %.4f" % w)
         fake_flow_path = []

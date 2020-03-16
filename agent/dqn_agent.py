@@ -77,7 +77,7 @@ class DQNAgent(RLAgent):
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load_model(self, dir="model/dqn", e = 39):
+    def load_model(self, dir="model/dqn", e = 199):
         name = "dqn_agent_{}_{}.h5".format(self.iid, e)
         model_name = os.path.join(dir, name)
         self.model.load_weights(model_name)
