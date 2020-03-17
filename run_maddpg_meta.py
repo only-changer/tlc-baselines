@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('config_file', type=str, help='path of config file')
     parser.add_argument('--thread', type=int, default=1, help='number of threads')
     parser.add_argument('--steps', type=int, default=3600, help='number of steps')
-    parser.add_argument('--action_interval', type=int, default=1, help='how often agent make decisions')
+    parser.add_argument('--action_interval', type=int, default=20, help='how often agent make decisions')
     parser.add_argument('--episodes', type=int, default=500, help='training episodes')
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2, help="learning rate for Adam optimizer")
@@ -172,7 +172,8 @@ def test(path, model_id=None):
                 # get action
                 action_n = [agent.get_action(obs) for agent, obs in zip(agents, obs_n)]
                 # environment step
-                obs_n, rew_n, done_n, info_n = env.step(action_n)
+                for _ in range(args.action_interval):
+                    obs_n, rew_n, done_n, info_n = env.step(action_n)
                 done = all(done_n)
                 if done:
                     break
@@ -198,7 +199,8 @@ def meta_test(path, model_id=None):
                 # get action
                 action_n = [agent.get_action(obs) for agent, obs in zip(agents, obs_n)]
                 # environment step
-                obs_n, rew_n, done_n, info_n = env.step(action_n)
+                for _ in range(args.action_interval):
+                    obs_n, rew_n, done_n, info_n = env.step(action_n)
                 done = all(done_n)
                 if done:
                     break
