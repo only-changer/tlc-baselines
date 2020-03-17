@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument('--thread', type=int, default=1, help='number of threads')
     parser.add_argument('--steps', type=int, default=3600, help='number of steps')
     parser.add_argument('--action_interval', type=int, default=1, help='how often agent make decisions')
-    parser.add_argument('--episodes', type=int, default=2, help='training episodes')
+    parser.add_argument('--episodes', type=int, default=500, help='training episodes')
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2, help="learning rate for Adam optimizer")
     parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
