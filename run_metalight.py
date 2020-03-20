@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('config_file', type=str, help='path of config file')
 parser.add_argument('--thread', type=int, default=1, help='number of threads')
 parser.add_argument('--steps', type=int, default=3600, help='number of steps')
-parser.add_argument('--action_interval', type=int, default=10, help='how often agent make decisions')
+parser.add_argument('--action_interval', type=int, default=20, help='how often agent make decisions')
 parser.add_argument('--episodes', type=int, default=200, help='training episodes')
 parser.add_argument('--save_model', action="store_true", default=True)
 parser.add_argument('--load_model', action="store_true", default=False)
@@ -290,7 +290,7 @@ if __name__ == '__main__':
     for root, dirs, files in os.walk(real_flow_floder):
         for file in files:
             real_flow_path.append(real_flow_floder + file)
-    meta_train(real_flow_path)
+    # meta_train(real_flow_path)
     logger.info("Meta Test Real")
     result = []
     for n in range(len(real_flow_path)):

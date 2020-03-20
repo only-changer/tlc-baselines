@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('config_file', type=str, help='path of config file')
 parser.add_argument('--thread', type=int, default=4, help='number of threads')
 parser.add_argument('--steps', type=int, default=3600, help='number of steps')
-parser.add_argument('--action_interval', type=int, default=10, help='how often agent make decisions')
+parser.add_argument('--action_interval', type=int, default=20, help='how often agent make decisions')
 parser.add_argument('--episodes', type=int, default=200, help='training episodes')
 parser.add_argument('--save_model', action="store_true", default=False)
 parser.add_argument('--load_model', action="store_true", default=False)
@@ -114,7 +114,7 @@ def train(args, env):
 def test():
     obs = env.reset()
     for agent in agents:
-        agent.load_model(args.save_dir)
+        agent.load_model(args.save_dir, 0)
     for i in range(args.steps):
         if i % args.action_interval == 0:
             actions = []
@@ -125,12 +125,12 @@ def test():
 
         if all(dones):
             break
-    logger.info("Final Travel Time is %.4f" % env.metric.update(done=True))
+    logger.info("Final Travel Time is %.4f" % env.eng.get_average_travel_time())
 
 
 if __name__ == '__main__':
     # simulate
     # import os
     # os.environ["CUDA_VISIBLE_DEVICES"] = '0, 1'
-    train(args, env)
-    #test()
+    # train(args, env)
+    test()

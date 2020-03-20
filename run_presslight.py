@@ -127,7 +127,7 @@ def train(args, env):
 def test():
     obs = env.reset()
     for agent in agents:
-        agent.load_model(args.save_dir)
+        agent.load_model(args.save_dir, 0)
     for i in range(args.steps):
         if i % args.action_interval == 0:
             actions = []
@@ -204,4 +204,4 @@ if __name__ == '__main__':
     # os.environ["CUDA_VISIBLE_DEVICES"] = '0, 1'
     # train(args, env)
     test()
-    meta_test('/mnt/d/Cityflow/examples/config.json')
+    # meta_test('/mnt/d/Cityflow/examples/config.json')

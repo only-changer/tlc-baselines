@@ -7,6 +7,9 @@ from metric import TravelTimeMetric
 import argparse
 import tensorflow as tf
 import os
+import logging
+from datetime import datetime
+
 
 # parse args
 def parse_args():
@@ -14,9 +17,9 @@ def parse_args():
     # Environment
     parser.add_argument('config_file', type=str, help='path of config file')
     parser.add_argument('--thread', type=int, default=1, help='number of threads')
-    parser.add_argument('--steps', type=int, default=100, help='number of steps')
+    parser.add_argument('--steps', type=int, default=3600, help='number of steps')
     parser.add_argument('--action_interval', type=int, default=1, help='how often agent make decisions')
-    parser.add_argument('--episodes', type=int, default=500, help='training episodes')
+    parser.add_argument('--episodes', type=int, default=2, help='training episodes')
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2, help="learning rate for Adam optimizer")
     parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
@@ -24,10 +27,23 @@ def parse_args():
     parser.add_argument("--num-units", type=int, default=128, help="number of units in the mlp")
     # Checkpointing
     parser.add_argument("--save-dir", type=str, default="model/maddpg", help="directory in which model should be saved")
-    parser.add_argument("--save-rate", type=int, default=10, help="save model once every time this many episodes are completed")
+    parser.add_argument("--save-rate", type=int, default=10,
+                        help="save model once every time this many episodes are completed")
+    parser.add_argument('--log_dir', type=str, default="log/maddpg", help='directory in which logs should be saved')
     return parser.parse_args()
-args = parse_args()
 
+
+args = parse_args()
+if not os.path.exists(args.log_dir):
+    os.makedirs(args.log_dir)
+logger = logging.getLogger('main')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler(os.path.join(args.log_dir, datetime.now().strftime('%Y%m%d-%H%M%S') + ".log"))
+fh.setLevel(logging.DEBUG)
+sh = logging.StreamHandler()
+sh.setLevel(logging.INFO)
+logger.addHandler(fh)
+logger.addHandler(sh)
 # create world
 world = World(args.config_file, thread_num=args.thread)
 
@@ -57,6 +73,7 @@ metric = TravelTimeMetric(world)
 
 # create env
 env = TSCEnv(world, agents, metric)
+
 
 # train maddpg_agent
 def train():
@@ -108,18 +125,22 @@ def train():
                     # update all trainers, if not in display or benchmark mode
                     loss = None
                     for agent in agents:
-                        loss = agent.update(agents, train_step)
+                        agent.update(agents, train_step)
                         # print(loss)
                         # if loss is not None:
                         #     print(loss[0], loss[1])
 
-            print("episode:{}/{}, total agent episode mean reward:{}".format(e, args.episodes, episode_rewards[0]/episode_step))
+            # logger.info("episode:{}/{}, total agent episode mean reward:{}".format(e, args.episodes,
+            #                                                                  episode_rewards[0] / episode_step))
+            logger.info(
+                "episode:{}/{}, average travel time:{}".format(e, args.episodes, env.eng.get_average_travel_time()))
             for i in range(len(agents)):
-                print("agent:{}, episode mean reward:{}".format(i, agent_rewards[i][-1]/episode_step))
+                logger.info("agent:{}, episode mean reward:{}".format(i, agent_rewards[i][-1] / episode_step))
             if e % args.save_rate == 0:
                 if not os.path.exists(args.save_dir):
                     os.makedirs(args.save_dir)
                 saver.save(sess, os.path.join(args.save_dir, "maddpg_{}.ckpt".format(e)))
+
 
 def test(model_id=None):
     sess = tf.Session()
@@ -133,7 +154,7 @@ def test(model_id=None):
             saver.restore(sess, model_file)
         obs_n = env.reset()
         for i in range(args.steps):
-            if i % args.delta_t == 0:
+            if i % args.action_interval == 0:
                 # get action
                 action_n = [agent.get_action(obs) for agent, obs in zip(agents, obs_n)]
                 # environment step
@@ -141,8 +162,9 @@ def test(model_id=None):
                 done = all(done_n)
                 if done:
                     break
-        print("Final Travel Time is %.4f" % env.metric.update(done=True))
+        print("Final Travel Time is %.4f" % env.eng.get_average_travel_time())
+
 
 # simulate
-train()
-#test()
+# train()
+test()
