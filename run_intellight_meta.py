@@ -288,7 +288,7 @@ if __name__ == '__main__':
     logger.info(
         "Meta Test Result, Max: {}, Min: {}, Mean: {}".format(np.max(result), np.min(result), np.mean(result)))
     fake_flow_floder = '/mnt/c/users/onlyc/desktop/work/RRL_TLC/fake_flow_config/'
-    w_dis = [0.1]
+    w_dis = [0.005, 0.01, 0.05, 0.1]
     for w in w_dis:
         logger.info("Meta Test Fake with W Distance: %.4f" % w)
         fake_flow_path = []
