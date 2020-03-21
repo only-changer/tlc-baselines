@@ -233,8 +233,8 @@ def test(env, args, model_name):
 
 if __name__ == "__main__":
     player = TrafficLightDQN(agents, env)
-    player.train(if_pretrain=True, use_average=True)
-    player.train(if_pretrain=False, use_average=False)
+    # player.train(if_pretrain=True, use_average=True)
+    # player.train(if_pretrain=False, use_average=False)
 
     # test(env, args, "602.0")
-    # test(env, args, "init_model")
+    test(env, args, "init_model")

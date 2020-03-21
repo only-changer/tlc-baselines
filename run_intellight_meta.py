@@ -180,7 +180,7 @@ def meta_train(path):
                             # if True:
                             actions.append(agent.get_action(meta_last_obs[n][agent_id]))
                         else:
-                            action, _ = agent.choose(state=meta_ob[n], count= meta_env[n].eng.get_current_time(), if_pretrain=False)
+                            action, _ = agent.choose(state=meta_ob[n], count= meta_env[n].eng.get_current_time(), if_pretrain=True)
                             actions.append(action)
 
                     rewards_list = []
@@ -209,7 +209,7 @@ def meta_train(path):
             if not os.path.exists(args.save_dir):
                 os.makedirs(args.save_dir)
             for agent in meta_agents[0]:
-                agent.save_model(args.save_dir, e)
+                agent.save_model(args.save_dir)
         for n in range(len(path)):
             logger.info("env:{}, episode:{}/{}, average travel time:{}".format(n, e, args.episodes, meta_env[
                 n].eng.get_average_travel_time()))
