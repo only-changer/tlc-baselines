@@ -189,7 +189,7 @@ class IntelliLightAgent(RLAgent):
         else:
             if random.random() <= paras["EPSILON"]:  # continue explore new Random Action
                 keep_or_change = random.randrange(len(q_values[0]))
-                print("##Explore")
+                # print("##Explore")
             else:  # exploitation
                 keep_or_change = np.argmax(q_values[0])
             if paras["EPSILON"] > 0.001 and count >= 20000:
@@ -389,7 +389,7 @@ class IntelliLightAgent(RLAgent):
 
         hist = self.q_network.fit(Xs, Y, batch_size=batch_size, epochs=epochs,
                                   shuffle=False,
-                                  verbose=2, validation_split=0.3, callbacks=[early_stopping])
+                                  verbose=0, validation_split=0.3, callbacks=[early_stopping])
         self.save_model(prefix)
 
     def update_network(self, if_pretrain, use_average, current_time):
