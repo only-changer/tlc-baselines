@@ -205,11 +205,9 @@ def meta_train(path):
                 agent.update_network_bar()
             if all(dones):
                 break
-        if e % args.save_rate == args.save_rate - 1:
-            if not os.path.exists(args.save_dir):
-                os.makedirs(args.save_dir)
+        if e % args.save_rate == 0:
             for agent in meta_agents[0]:
-                agent.save_model(args.save_dir)
+                agent.save_model(e)
         for n in range(len(path)):
             logger.info("env:{}, episode:{}/{}, average travel time:{}".format(n, e, args.episodes, meta_env[
                 n].eng.get_average_travel_time()))
