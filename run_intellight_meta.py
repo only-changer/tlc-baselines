@@ -134,7 +134,7 @@ def test(path):
     world, agents, env = build(path)
     obs = env.reset()
     for agent in agents:
-        agent.load_model(args.save_dir)
+        agent.load_model(3600)
     for i in range(args.steps):
         if i % args.action_interval == 0:
             actions = []
@@ -225,7 +225,7 @@ def meta_test(path):
     last_obs = obs
     # env.change_world(World(config, thread_num=args.thread))
     for agent in agents:
-        agent.load_model(args.save_dir)
+        agent.load_model(3600)
     total_decision_num = 0
     for i in range(args.steps):
         if i % args.action_interval == 0:
@@ -244,10 +244,8 @@ def meta_test(path):
                     total_decision_num += 1
                 last_obs = obs
                 for agent_id, agent in enumerate(agents):
-                    if total_decision_num > agent.meta_test_start and total_decision_num % agent.meta_test_update_model_freq == agent.meta_test_update_model_freq - 1:
-                        agent.replay()
-                    if total_decision_num > agent.meta_test_start and total_decision_num % agent.meta_test_update_target_model_freq == agent.meta_test_update_target_model_freq - 1:
-                        agent.update_target_network()
+                    agent.update_network(True, True, i)
+                    agent.update_network_bar()
         # print(env.eng.get_average_travel_time())
         if all(dones):
             break
@@ -279,14 +277,14 @@ if __name__ == '__main__':
     for root, dirs, files in os.walk(real_flow_floder):
         for file in files:
             real_flow_path.append(real_flow_floder + file)
-    meta_train(real_flow_path)
+    # meta_train(real_flow_path)
     logger.info("Meta Test Real")
     result = []
     for n in range(len(real_flow_path)):
         logger.info("Meta Test Env: %d" % n)
         t1 = test(real_flow_path[n])
-        t2 = meta_test(real_flow_path[n])
-        result.append(np.minimum(t1, t2))
+        # t2 = meta_test(real_flow_path[n])
+        result.append(t1)
     logger.info(
         "Meta Test Result, Max: {}, Min: {}, Mean: {}".format(np.max(result), np.min(result), np.mean(result)))
     fake_flow_floder = '/mnt/c/users/onlyc/desktop/work/RRL_TLC/fake_flow_config/'
@@ -301,7 +299,7 @@ if __name__ == '__main__':
         for n in range(len(fake_flow_path)):
             logger.info("Meta Test Env: %d" % n)
             t1 = test(fake_flow_path[n])
-            t2 = meta_test(fake_flow_path[n])
-            result.append(np.minimum(t1, t2))
+            # t2 = meta_test(fake_flow_path[n])
+            result.append(t1)
         logger.info(
             "Meta Test Result, Max: {}, Min: {}, Mean: {}".format(np.max(result), np.min(result), np.mean(result)))
